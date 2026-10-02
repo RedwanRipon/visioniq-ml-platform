@@ -1,0 +1,15 @@
+project:
+  name: VisionIQ
+  seed: 42
+data:
+  dataset: cifar10
+  data_dir: data/raw
+  image_size: 128
+  validation_fraction: 0.1
+  batch_size: 64
+  num_workers: 2
+training:
+  model: resnet18
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  epochs: 5
