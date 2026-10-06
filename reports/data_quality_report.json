@@ -1,0 +1,64 @@
+{
+  "train": {
+    "samples": 50000,
+    "classes": 10,
+    "class_distribution": {
+      "airplane": 5000,
+      "automobile": 5000,
+      "bird": 5000,
+      "cat": 5000,
+      "deer": 5000,
+      "dog": 5000,
+      "frog": 5000,
+      "horse": 5000,
+      "ship": 5000,
+      "truck": 5000
+    },
+    "imbalance_ratio": 1.0,
+    "corrupted": 0,
+    "duplicates": 0,
+    "channel_mean": [
+      0.4914,
+      0.4822,
+      0.4465
+    ],
+    "channel_std": [
+      0.247,
+      0.2435,
+      0.2616
+    ],
+    "outliers": 2,
+    "status": "PASS"
+  },
+  "test": {
+    "samples": 10000,
+    "classes": 10,
+    "class_distribution": {
+      "airplane": 1000,
+      "automobile": 1000,
+      "bird": 1000,
+      "cat": 1000,
+      "deer": 1000,
+      "dog": 1000,
+      "frog": 1000,
+      "horse": 1000,
+      "ship": 1000,
+      "truck": 1000
+    },
+    "imbalance_ratio": 1.0,
+    "corrupted": 0,
+    "duplicates": 0,
+    "channel_mean": [
+      0.4942,
+      0.4851,
+      0.4504
+    ],
+    "channel_std": [
+      0.2467,
+      0.2429,
+      0.2616
+    ],
+    "outliers": 1,
+    "status": "PASS"
+  }
+}

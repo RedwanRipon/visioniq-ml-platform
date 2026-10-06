@@ -13,3 +13,8 @@ training:
   learning_rate: 0.0003
   weight_decay: 0.0001
   epochs: 5
+quality:
+  max_corruption_rate: 0.01
+  max_duplicate_rate: 0.05
+  max_imbalance_ratio: 1.5
+  outlier_z_threshold: 4.0
