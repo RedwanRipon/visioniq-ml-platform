@@ -8,3 +8,4 @@ mlruns/
 *.pth
 *.pt
 *.log
+mlartifacts/

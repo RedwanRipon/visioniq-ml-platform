@@ -18,3 +18,6 @@ quality:
   max_duplicate_rate: 0.05
   max_imbalance_ratio: 1.5
   outlier_z_threshold: 4.0
+mlflow:
+  experiment_name: VisionIQ_CV
+  tracking_uri: sqlite:///mlruns/mlflow.db
