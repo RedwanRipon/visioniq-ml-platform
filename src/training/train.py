@@ -1,5 +1,6 @@
 import argparse
 import time
+import mlflow
 
 import torch
 from torch import nn
@@ -47,6 +48,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--subset", type=int, default=None, help="use only N training images (quick test)")
+    parser.add_argument("--lr", type=float, default=None)
+    parser.add_argument("--run-name", default="resnet18")
     args = parser.parse_args()
 
     config = load_config()
@@ -61,24 +64,41 @@ def main():
 
     model = build_model(config).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config["training"]["learning_rate"],
+    lr = args.lr or config["training"]["learning_rate"]
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr,
                                   weight_decay=config["training"]["weight_decay"])
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs) 
 
     best_acc = 0.0
     ckpt_path = PROJECT_ROOT / "models" / "best_model.pth"
-    logger.info("device=%s epochs=%d train_images=%d", device, epochs, len(train_dl.dataset))
-    for epoch in range(1, epochs + 1):
-        start = time.time()
-        train_loss, train_acc = train_one_epoch(model, train_dl, criterion, optimizer, device)
-        val_loss, val_acc = evaluate(model, val_dl, criterion, device)
-        scheduler.step()
-        logger.info("epoch %d | train_loss %.4f acc %.4f | val_loss %.4f acc %.4f | %.0fs",
-                    epoch, train_loss, train_acc, val_loss, val_acc, time.time() - start)
-        if val_acc > best_acc:                      # checkpoint only when it improves
-            best_acc = val_acc
-            torch.save(model.state_dict(), ckpt_path)
-            logger.info("saved best model (val_acc=%.4f) -> %s", val_acc, ckpt_path)
+    (PROJECT_ROOT / "mlruns").mkdir(exist_ok=True)
+    mlflow.set_tracking_uri(config["mlflow"]["tracking_uri"])
+    mlflow.set_experiment(config["mlflow"]["experiment_name"])
+
+    with mlflow.start_run(run_name=args.run_name):
+        mlflow.log_params({"model": config["training"]["model"], "learning_rate": lr,
+                           "weight_decay": config["training"]["weight_decay"], "epochs": epochs,
+                           "batch_size": config["data"]["batch_size"], "optimizer": "AdamW",
+                           "seed": config["project"]["seed"], "train_images": len(train_dl.dataset)})
+        mlflow.log_artifact(str(PROJECT_ROOT / "configs" / "config.yaml"))
+
+        logger.info("device=%s epochs=%d lr=%g", device, epochs, lr)
+        for epoch in range(1, epochs + 1):
+            start = time.time()
+            train_loss, train_acc = train_one_epoch(model, train_dl, criterion, optimizer, device)
+            val_loss, val_acc = evaluate(model, val_dl, criterion, device)
+            scheduler.step()
+            logger.info("epoch %d | train_loss %.4f acc %.4f | val_loss %.4f acc %.4f | %.0fs",
+                        epoch, train_loss, train_acc, val_loss, val_acc, time.time() - start)
+            mlflow.log_metrics({"train_loss": train_loss, "train_accuracy": train_acc,
+                                "validation_loss": val_loss, "validation_accuracy": val_acc}, step=epoch)
+            if val_acc > best_acc:
+                best_acc = val_acc
+                torch.save(model.state_dict(), ckpt_path)
+                logger.info("saved best model (val_acc=%.4f)", val_acc)
+
+        mlflow.log_metric("best_validation_accuracy", best_acc)
+        mlflow.log_artifact(str(ckpt_path))          # the model file is stored with the run
 
 
 if __name__ == "__main__":
