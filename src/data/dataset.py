@@ -2,21 +2,22 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from torchvision.datasets import CIFAR10
 
-from src.data.preprocessing import eval_transform, train_transform
+from src.data.preprocessing import eval_transform
+from src.data.synthetic import build_train_transform
 from src.utils.config import PROJECT_ROOT 
 from  src.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def build_dataloaders(config):
+def build_dataloaders(config,policy="standard"):
     root = str(PROJECT_ROOT / config["data"]["data_dir"])
     seed = config["project"]["seed"]
     bs = config["data"]["batch_size"]
     nw = config["data"]["num_workers"]
 
     # Same 50k images loaded twice: once with training transforms, once without.
-    train_full = CIFAR10(root, train=True, download=True, transform=train_transform())
+    train_full = CIFAR10(root, train=True, download=True, transform=build_train_transform(policy))
     val_full = CIFAR10(root, train=True, download=True, transform=eval_transform())
     test_set = CIFAR10(root, train=False, download=True, transform=eval_transform())
 
