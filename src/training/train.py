@@ -50,6 +50,7 @@ def main():
     parser.add_argument("--subset", type=int, default=None, help="use only N training images (quick test)")
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--run-name", default="resnet18")
+    parser.add_argument("--policy", choices=["none", "standard", "strong"], default="standard")
     args = parser.parse_args()
 
     config = load_config()
@@ -57,7 +58,7 @@ def main():
     device = get_device()
     epochs = args.epochs or config["training"]["epochs"]
 
-    train_dl, val_dl, _ = build_dataloaders(config)
+    train_dl, val_dl, _ = build_dataloaders(config, args.policy)
     if args.subset:                                 # smoke test: tiny slice of the data
         train_dl = DataLoader(Subset(train_dl.dataset, range(args.subset)),
                               batch_size=config["data"]["batch_size"], shuffle=True)
@@ -70,7 +71,7 @@ def main():
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs) 
 
     best_acc = 0.0
-    ckpt_path = PROJECT_ROOT / "models" / "best_model.pth"
+    ckpt_path = PROJECT_ROOT / "models" / f"{args.run_name}.pth"
     (PROJECT_ROOT / "mlruns").mkdir(exist_ok=True)
     mlflow.set_tracking_uri(config["mlflow"]["tracking_uri"])
     mlflow.set_experiment(config["mlflow"]["experiment_name"])
@@ -79,7 +80,7 @@ def main():
         mlflow.log_params({"model": config["training"]["model"], "learning_rate": lr,
                            "weight_decay": config["training"]["weight_decay"], "epochs": epochs,
                            "batch_size": config["data"]["batch_size"], "optimizer": "AdamW",
-                           "seed": config["project"]["seed"], "train_images": len(train_dl.dataset)})
+                           "seed": config["project"]["seed"], "train_images": len(train_dl.dataset),"augmentation": args.policy})
         mlflow.log_artifact(str(PROJECT_ROOT / "configs" / "config.yaml"))
 
         logger.info("device=%s epochs=%d lr=%g", device, epochs, lr)
