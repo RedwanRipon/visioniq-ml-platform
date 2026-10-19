@@ -21,3 +21,8 @@ quality:
 mlflow:
   experiment_name: VisionIQ_CV
   tracking_uri: sqlite:///mlruns/mlflow.db
+
+tuning:
+  n_trials: 5
+  train_subset: 10000
+  val_subset: 2000
