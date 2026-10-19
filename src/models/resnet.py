@@ -23,7 +23,8 @@ class VisionIQResNet(nn.Module):
 
 
 def build_model(config):
-    return VisionIQResNet(input_size=config["data"]["image_size"])
+    return VisionIQResNet(dropout=config["training"].get("dropout", 0.2),
+                          input_size=config["data"]["image_size"])
 
 
 def get_device():

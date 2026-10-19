@@ -1,0 +1,20 @@
+{
+  "model_name": "resnet18",
+  "model_version": "1.0.0",
+  "dataset": "cifar10",
+  "classes": 10,
+  "augmentation": "standard",
+  "training_config": {
+    "learning_rate": 8.468008575248325e-05,
+    "epochs": 5,
+    "batch_size": 32,
+    "weight_decay": 0.006351221010640704,
+    "dropout": 0.07799726016810132,
+    "seed": 42
+  },
+  "metrics": {
+    "best_validation_accuracy": 0.9646
+  },
+  "mlflow_run_id": "ac7dc638721940f9b0e1a8ff1c365137",
+  "timestamp": "2026-10-19T12:16:10+00:00"
+}

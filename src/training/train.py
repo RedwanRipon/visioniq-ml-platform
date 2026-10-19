@@ -1,10 +1,13 @@
 import argparse
 import time
 import mlflow
+import json
+
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Subset
+from datetime import datetime, timezone
 
 from src.data.dataset import build_dataloaders
 from src.models.resnet import build_model, get_device
@@ -51,9 +54,17 @@ def main():
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--run-name", default="resnet18")
     parser.add_argument("--policy", choices=["none", "standard", "strong"], default="standard")
+    parser.add_argument("--params", default=None, help="JSON file with tuned hyperparameters")
     args = parser.parse_args()
 
     config = load_config()
+    if args.params:
+        best = json.loads((PROJECT_ROOT / args.params).read_text())
+        config["training"]["learning_rate"] = best["learning_rate"]
+        config["training"]["weight_decay"] = best["weight_decay"]
+        config["training"]["dropout"] = best["dropout"]
+        config["data"]["batch_size"] = best["batch_size"]
+
     set_seed(config["project"]["seed"])
     device = get_device()
     epochs = args.epochs or config["training"]["epochs"]
@@ -80,6 +91,7 @@ def main():
         mlflow.log_params({"model": config["training"]["model"], "learning_rate": lr,
                            "weight_decay": config["training"]["weight_decay"], "epochs": epochs,
                            "batch_size": config["data"]["batch_size"], "optimizer": "AdamW",
+                           "dropout": config["training"].get("dropout", 0.2),
                            "seed": config["project"]["seed"], "train_images": len(train_dl.dataset),"augmentation": args.policy})
         mlflow.log_artifact(str(PROJECT_ROOT / "configs" / "config.yaml"))
 
@@ -99,7 +111,20 @@ def main():
                 logger.info("saved best model (val_acc=%.4f)", val_acc)
 
         mlflow.log_metric("best_validation_accuracy", best_acc)
-        mlflow.log_artifact(str(ckpt_path))          # the model file is stored with the run
+        mlflow.log_artifact(str(ckpt_path))
+        metadata = {
+            "model_name": "resnet18", "model_version": "1.0.0",
+            "dataset": "cifar10", "classes": 10, "augmentation": args.policy,
+            "training_config": {"learning_rate": lr, "epochs": epochs,
+                                "batch_size": config["data"]["batch_size"],
+                                "weight_decay": config["training"]["weight_decay"],
+                                "dropout": config["training"].get("dropout", 0.2),
+                                "seed": config["project"]["seed"]},
+            "metrics": {"best_validation_accuracy": best_acc},
+            "mlflow_run_id": mlflow.active_run().info.run_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        (PROJECT_ROOT / "models" / f"{args.run_name}_metadata.json").write_text(json.dumps(metadata, indent=2))          # the model file is stored with the run
 
 
 if __name__ == "__main__":
