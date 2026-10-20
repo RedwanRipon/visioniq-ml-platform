@@ -8,10 +8,9 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 from api.schemas import Prediction, TopK
 
-from api.schemas import Prediction
 from src.data.preprocessing import CIFAR10_CLASSES, eval_transform
 from src.models.resnet import VisionIQResNet
-from src.utils.config import PROJECT_ROOT
+from src.utils.config import PROJECT_ROOT, load_config
 
 MAX_BYTES = 5 * 1024 * 1024                                   # 5 MB upload limit
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
@@ -27,6 +26,7 @@ async def lifespan(app):
                                      map_location="cpu", weights_only=True))
     state["model"] = model.eval()
     state["meta"] = meta
+    state["confidence_threshold"] = load_config()["api"]["confidence_threshold"]
     yield
 
 
@@ -69,7 +69,8 @@ async def predict(file: UploadFile = File(...)):
     elapsed = (time.perf_counter() - start) * 1000
 
     return Prediction(
-        predicted_class=CIFAR10_CLASSES[top_i[0]],
+        predicted_class=(CIFAR10_CLASSES[top_i[0]] if top_p[0].item() >= state["confidence_threshold"]
+                         else "unknown"),
         confidence=round(top_p[0].item(), 4),
         top_k=[TopK(class_name=CIFAR10_CLASSES[i], probability=round(p.item(), 4))
                for p, i in zip(top_p, top_i)],

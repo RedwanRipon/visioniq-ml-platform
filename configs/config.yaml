@@ -26,3 +26,6 @@ tuning:
   n_trials: 5
   train_subset: 10000
   val_subset: 2000
+
+api:
+  confidence_threshold: 0.9
