@@ -42,6 +42,7 @@ def compute_metrics(y_true, y_pred, y_prob):
 
 
 def sanity_checks(model, device):
+    model.eval()                                    # never update BatchNorm stats with test inputs
     x = torch.randn(4, 3, 32, 32, device=device)
     with torch.no_grad():
         out = model(x)
@@ -76,6 +77,7 @@ def main():
     model = build_model(config).to(device)
     model.load_state_dict(torch.load(PROJECT_ROOT / "models" / "best_model.pth",
                                      map_location=device, weights_only=True))
+    model.eval()                                    # BEFORE any forward pass, incl. sanity checks
 
     checks = sanity_checks(model, device)
     logger.info("sanity checks: %s", checks)
