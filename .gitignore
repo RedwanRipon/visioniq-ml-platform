@@ -9,3 +9,5 @@ mlruns/
 *.pt
 *.log
 mlartifacts/
+data/metadata/
+data/storage/
