@@ -1,0 +1,34 @@
+services:
+  backend:
+    build: { context: ., target: backend }
+    ports: ["8000:8000"]
+    volumes: ["./models:/app/models:ro"]          # your trained model, read-only
+
+  frontend:
+    build: { context: ., target: frontend }
+    ports: ["8501:8501"]
+    environment:
+      API_URL: http://backend:8000                # containers find each other by service name
+    depends_on: [backend]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: visioniq
+      POSTGRES_PASSWORD: visioniq_local_only
+      POSTGRES_DB: visioniq
+    ports: ["5433:5432"]                          # 5433 on the laptop: a Windows PostgreSQL already uses 5432
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+
+  minio:
+    image: rustfs/rustfs:latest                   # S3-compatible store, drop-in for MinIO
+    environment:
+      RUSTFS_ACCESS_KEY: visioniq
+      RUSTFS_SECRET_KEY: visioniq_local_only
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports: ["9000:9000", "9001:9001"]             # 9000 = S3 API, 9001 = web console
+    volumes: ["s3data:/data"]
+
+volumes:
+  pgdata:
+  s3data:

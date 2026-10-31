@@ -10,6 +10,7 @@ LOCAL_ROOT = PROJECT_ROOT / "data" / "storage"
 def _s3():
     import boto3
     return boto3.client("s3", endpoint_url=os.environ.get("S3_ENDPOINT_URL"),   # MinIO address, or None for AWS
+                        region_name="us-east-1",
                         aws_access_key_id=os.environ.get("S3_ACCESS_KEY"),
                         aws_secret_access_key=os.environ.get("S3_SECRET_KEY"))
 
@@ -17,7 +18,11 @@ def _s3():
 def upload_file(local_path, key):
     bucket = os.environ.get("S3_BUCKET")
     if bucket:
-        _s3().upload_file(str(local_path), bucket, key)
+        client = _s3()
+        existing = [b["Name"] for b in client.list_buckets()["Buckets"]]
+        if bucket not in existing:
+            client.create_bucket(Bucket=bucket)           # first upload creates the bucket
+        client.upload_file(str(local_path), bucket, key)
         return f"s3://{bucket}/{key}"
     dest = LOCAL_ROOT / key
     dest.parent.mkdir(parents=True, exist_ok=True)
