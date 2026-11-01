@@ -8,26 +8,29 @@ service, a Streamlit web app, PostgreSQL metadata, S3-compatible storage and Doc
 > supported CIFAR-10 classes and are intended for demonstration purposes.
 
 ## Architecture
+
+**Serving (Docker Compose)**
+
 ```mermaid
 flowchart LR
-    subgraph Serving["Serving (Docker Compose)"]
-        U([User / Browser]) --> FE[Streamlit web app<br/>app/]
-        FE -->|HTTP POST /predict| API[FastAPI backend<br/>api/]
-        API --> M[[PyTorch ResNet18<br/>best_model.pth]]
-    end
+    U([User]) --> FE[Streamlit<br/>web app]
+    FE -->|POST /predict| API[FastAPI<br/>backend]
+    API --> M[[ResNet18<br/>model]]
+```
 
-    subgraph Training["Training pipeline"]
-        D[(CIFAR-10)] --> Q{Data-quality gate<br/>PASS / FAIL}
-        Q -->|PASS| P[Preprocessing +<br/>augmentation]
-        P --> T[ResNet18 training]
-        T --> O[Optuna tuning]
-        O --> E[Evaluation<br/>95.60% test acc]
-    end
+**Training pipeline**
 
-    T -.->|params, metrics| ML[(MLflow)]
-    E --> M
-    E -.->|metadata| PG[(PostgreSQL)]
-    M -.->|model artifact| S3[(S3 / RustFS)]
+```mermaid
+flowchart TB
+    D[(CIFAR-10)] --> Q{Data-quality<br/>gate}
+    Q -->|PASS| P[Preprocessing +<br/>augmentation]
+    P --> T[ResNet18 training]
+    T --> O[Optuna tuning]
+    O --> E[Evaluation<br/>95.60% test acc]
+    E --> M[[best_model.pth]]
+    T -.-> ML[(MLflow)]
+    E -.-> PG[(PostgreSQL)]
+    M -.-> S3[(S3 / RustFS)]
 ```
 
 ## Results (measured)
