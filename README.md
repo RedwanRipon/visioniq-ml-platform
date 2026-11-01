@@ -7,8 +7,6 @@ service, a Streamlit web app, PostgreSQL metadata, S3-compatible storage and Doc
 > This demo uses a model trained on the CIFAR-10 benchmark dataset. Predictions are limited to the
 > supported CIFAR-10 classes and are intended for demonstration purposes.
 
-**Live demo:** not deployed yet (LIVE_DEMO_URL)
-
 ## Architecture
 
 ```
